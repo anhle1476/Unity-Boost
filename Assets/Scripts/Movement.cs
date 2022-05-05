@@ -5,18 +5,13 @@ using UnityEngine;
 
 public class Movement : MonoBehaviour
 {
-    [SerializeField] float ySpeed = 4f;
-    [SerializeField] float xSpeed = 1f;
-    [SerializeField] float boostDecreaseSpeed = 0.1f;
-    [SerializeField] float maxSpeed = 10;
+    [SerializeField] float boostSpeed = 1000f;
+    [SerializeField] float rotateSpeed = 100f;
+    private Rigidbody rb;
 
-    private Vector3 boostForce = Vector3.zero;
-    private Vector3 maxBoostSpeed;
-
-    // Start is called before the first frame update
     void Start()
     {
-        maxBoostSpeed = Vector3.up * maxSpeed;
+        rb = GetComponent<Rigidbody>();
     }
 
     // Update is called once per frame
@@ -33,26 +28,17 @@ public class Movement : MonoBehaviour
 
     private void ProcessBoost()
     {
-        if (Input.GetKey(KeyCode.Space))
+        // apply the boost force if the keys are pressed
+        if (Input.GetKey(KeyCode.Space) || Input.GetKey(KeyCode.UpArrow))
         {
-            boostForce += Time.deltaTime * ySpeed * Vector3.up;
-            // limit by max speed
-            boostForce = Vector3.Min(boostForce, maxBoostSpeed);
-            // counter the gravity as we are boost
-            boostForce += Physics.gravity.x * Time.deltaTime * Vector3.up;
-        }
-
-        boostForce = Vector3.Lerp(boostForce, Vector3.zero, boostDecreaseSpeed * Time.deltaTime * 60);
-        if (boostForce != Vector3.zero)
-        {
-            transform.Translate(Time.deltaTime * 10 * (transform.up + boostForce));
+            rb.AddRelativeForce(Time.deltaTime * boostSpeed * Vector3.up);
         }
     }
 
     private void ProcessRotation()
     {
         // Press left arror -> rotate left -> inverse the rotate Z
-        float rotateForce = Input.GetAxisRaw("Horizontal") * xSpeed;
-        transform.Rotate(Time.deltaTime * 60 * new Vector3(0, 0, -rotateForce));
+        float rotateForce = -Input.GetAxisRaw("Horizontal") * rotateSpeed;
+        transform.Rotate(Time.deltaTime * rotateForce * Vector3.forward);
     }
 }
