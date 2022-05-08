@@ -1,18 +1,28 @@
+using Assets.Scripts.Helpers;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(AudioSource))]
 public class Movement : MonoBehaviour
 {
     [SerializeField] float boostSpeed = 1000f;
     [SerializeField] float rotateSpeed = 100f;
+    [SerializeField] AudioClip engineSound = null;
+    [SerializeField] ParticleSystem mainEngineParticle = null;
+    [SerializeField] ParticleSystem leftEngineParticle = null;
+    [SerializeField] ParticleSystem rightEngineParticle = null;
+
     private Rigidbody rb;
     private AudioSource audioSource;
+    private RigidbodyConstraints initialConstraints;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        initialConstraints = rb.constraints;
         audioSource = GetComponent<AudioSource>();
     }
 
@@ -38,8 +48,10 @@ public class Movement : MonoBehaviour
             // play audio on when its boosted
             if (!audioSource.isPlaying)
             {
-                audioSource.Play();
+                audioSource.PlayOneShot(engineSound);
             }
+
+            mainEngineParticle.PlayIfNotPlaying();
         }
         else
         {
@@ -48,20 +60,47 @@ public class Movement : MonoBehaviour
             {
                 audioSource.Stop();
             }
+
+            mainEngineParticle.StopIfPlaying();
         }
     }
 
     private void ProcessRotation()
     {
-        // Press left arror -> rotate left -> inverse the rotate Z
+        // inverse the input rotation as it's the opposite of the Z rotate degree
         float rotateForce = -Input.GetAxisRaw("Horizontal") * rotateSpeed;
 
-        // freezing the rb physic rotation so we can manually rotate ourself
         if (rotateForce != 0)
         {
+            // freezing the rb physic rotation so we can manually rotate ourself
             rb.freezeRotation = true;
             transform.Rotate(Time.deltaTime * rotateForce * Vector3.forward);
+            // un-freeze and restore the physic body constraints
             rb.freezeRotation = false;
+            rb.constraints = initialConstraints;
+        }
+
+        ProcessSideEngineParticles(rotateForce);
+    }
+
+
+    private void ProcessSideEngineParticles(float rotateForce)
+    {
+        if (rotateForce != 0)
+        {
+            if (rotateForce < 0)
+            {
+                leftEngineParticle.PlayIfNotPlaying();
+            }
+            else
+            {
+                rightEngineParticle.PlayIfNotPlaying();
+            }
+        }
+        else
+        {
+            leftEngineParticle.StopIfPlaying();
+            rightEngineParticle.StopIfPlaying();
         }
     }
 }
